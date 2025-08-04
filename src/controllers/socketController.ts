@@ -167,4 +167,38 @@ static async getUserRooms(req: Request, res: Response): Promise<void> {
       res.status(500).json({ error: 'Socket durumu alma hatası', details: error });
     }
   }
+
+  // Konuşmada yazan kullanıcıları getir
+  static async getTypingUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const { conversationId } = req.params as any;
+      
+      if (!conversationId) {
+        res.status(400).json({
+          success: false,
+          message: 'Konuşma ID gerekli'
+        });
+        return;
+      }
+      
+      const typingUsers = socketService.getTypingUsers(conversationId);
+      
+      res.json({
+        success: true,
+        data: {
+          conversationId,
+          typingUsers,
+          count: typingUsers.length,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
+    } catch (error) {
+      console.error('Typing kullanıcıları getirme hatası:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Typing kullanıcıları getirilemedi'
+      });
+    }
+  }
 } 

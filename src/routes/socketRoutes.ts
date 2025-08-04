@@ -20,4 +20,7 @@ router.post('/system-message', requireAdmin, validateDto(SendSystemMessageDto), 
 router.post('/private-message', requireAdmin, validateDto(SendPrivateMessageDto), SocketController.sendPrivateMessage);
 router.post('/broadcast', requireAdmin, validateDto(BroadcastMessageDto), SocketController.broadcastMessage);
 
+// Typing kullanıcıları getirme
+router.get('/typing/:conversationId', requireAdmin, SocketController.getTypingUsers);
+
 export default router; 

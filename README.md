@@ -67,6 +67,11 @@ docker-compose -f docker-compose.app.yml up -d
 - `GET /api/redis/exists/:key` - Değer var mı kontrol et
 - `POST /api/redis/expire/:key` - TTL ayarla
 
+#### Online Kullanıcı Durumu
+- `GET /api/redis/online/count` - Anlık online kullanıcı sayısı
+- `GET /api/redis/online/status/:userId` - Belirli kullanıcının online durumu
+- `GET /api/redis/online/users` - Tüm online kullanıcı ID'leri listesi
+
 ### RabbitMQ Endpoints
 - `GET /api/rabbitmq/status` - RabbitMQ bağlantı durumu
 - `POST /api/rabbitmq/queue` - Queue oluştur
@@ -122,16 +127,41 @@ docker-compose -f docker-compose.app.yml up -d
 - `GET /api/socket/connected-users` - Bağlı kullanıcılar (Admin)
 - `GET /api/socket/user/:userId/rooms` - Kullanıcının odaları
 - `GET /api/socket/user/:userId/online` - Kullanıcı online durumu
+- `GET /api/socket/typing/:conversationId` - Konuşmada yazan kullanıcılar (Admin)
 - `POST /api/socket/system-message` - Sistem mesajı gönderme (Admin)
 - `POST /api/socket/private-message` - Özel mesaj gönderme (Admin)
 - `POST /api/socket/broadcast` - Broadcast mesajı gönderme (Admin)
+
+### AutoMessage & Queue Management Endpoints
+- `GET /api/auto-messages/stats` - Otomatik mesaj istatistikleri
+- `POST /api/auto-messages` - Otomatik mesaj oluşturma (Auth gerekli)
+- `GET /api/auto-messages` - Otomatik mesajları listeleme (Auth gerekli)
+- `GET /api/auto-messages/:autoMessageId` - Otomatik mesaj detayı (Auth gerekli)
+- `PUT /api/auto-messages/:autoMessageId` - Otomatik mesaj güncelleme (Auth gerekli)
+- `DELETE /api/auto-messages/:autoMessageId` - Otomatik mesaj silme (Auth gerekli)
+- `POST /api/auto-messages/:autoMessageId/trigger` - Manuel tetikleme (Auth gerekli)
+
+### Message Planning Service Endpoints
+- `GET /api/planning/status` - Planlama servisi durumu (Auth gerekli)
+- `POST /api/planning/trigger` - Manuel tetikleme (Auth gerekli)
+- `POST /api/planning/stop` - Servisi durdur (Auth gerekli)
+- `POST /api/planning/start` - Servisi başlat (Auth gerekli)
+
+### RabbitMQ Queue Management Endpoints
+- `GET /api/rabbitmq/auto-queue/status` - Otomatik mesaj kuyruğu durumu
+- `GET /api/rabbitmq/cron/status` - Cron servisi durumu
+- `POST /api/rabbitmq/cron/trigger` - Cron servisi manuel tetikleme
+- `POST /api/rabbitmq/cron/stop` - Cron servisi durdur
+- `POST /api/rabbitmq/cron/start` - Cron servisi başlat
 
 ### Socket.IO Events
 #### Client → Server
 - `connection` - Kullanıcının sisteme bağlanması
 - `join_room` - Belirli bir konuşma odasına katılma
 - `send_message` - Gerçek zamanlı mesaj gönderme
+- `typing` - Yazma durumu bildirimi (`{conversationId, isTyping}`)
 - `message_received` - Mesaj alındı bildirimi
+- `message_read` - Mesaj okundu bildirimi
 - `leave_room` - Odadan ayrılma
 - `disconnect` - Kullanıcının sistemden ayrılması
 
@@ -145,10 +175,35 @@ docker-compose -f docker-compose.app.yml up -d
 - `new_message` - Yeni mesaj bildirimi
 - `message_sent` - Mesaj gönderme onayı
 - `message_received` - Mesaj alma onayı
+- `message_read` - Mesaj okundu onayı
+- `user_typing` - Kullanıcı yazma durumu (`{userId, username, conversationId, isTyping, timestamp}`)
 - `system_message` - Sistem mesajı
 - `private_message` - Özel mesaj
 - `broadcast_message` - Broadcast mesajı
 - `error` - Hata bildirimi
+
+#### Mesaj Durumları
+- `sent` - Mesaj gönderildi
+- `delivered` - Mesaj alındı
+- `read` - Mesaj okundu
+
+## 🔴 Redis Online Kullanıcı Takibi
+
+Sistem, Socket.IO bağlantıları üzerinden kullanıcıların online durumlarını Redis Set veri yapısında gerçek zamanlı olarak takip eder.
+
+### Nasıl Çalışır?
+1. **Kullanıcı Bağlandığında**: JWT token doğrulaması başarılı olan kullanıcının ID'si Redis'teki `online_users` Set'ine eklenir
+2. **Kullanıcı Ayrıldığında**: Kullanıcının ID'si Redis'teki `online_users` Set'inden çıkarılır
+3. **Gerçek Zamanlı Bildirimler**: Diğer kullanıcılara online/offline durumu Socket.IO üzerinden broadcast edilir
+
+### API Endpoints
+- `GET /api/redis/online/count` - Anlık online kullanıcı sayısını döndürür
+- `GET /api/redis/online/status/:userId` - Belirli bir kullanıcının online durumunu kontrol eder
+- `GET /api/redis/online/users` - Tüm online kullanıcı ID'lerini listeler
+
+### Socket.IO Events
+- `user_online` - Kullanıcı online olduğunda diğer kullanıcılara gönderilir
+- `user_offline` - Kullanıcı offline olduğunda diğer kullanıcılara gönderilir
 
 ## 🔧 Gereksinimler
 

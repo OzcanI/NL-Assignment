@@ -16,4 +16,9 @@ router.delete('/delete/:key', RedisController.deleteValue);
 router.get('/exists/:key', RedisController.checkExists);
 router.post('/expire/:key', RedisController.setExpiry);
 
+// Online kullanıcı durumu işlemleri
+router.get('/online/count', RedisController.getOnlineUserCount);
+router.get('/online/status/:userId', RedisController.checkUserOnlineStatus);
+router.get('/online/users', RedisController.getOnlineUserIds);
+
 export default router; 

@@ -1,185 +1,98 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface IAutoMessage extends Document {
-  name: string;
-  description?: string;
-  triggerType: 'keyword' | 'event' | 'schedule' | 'condition';
-  triggerConfig: {
-    keywords?: string[];
-    events?: string[];
-    schedule?: {
-      cron: string;
-      timezone: string;
-    };
-    conditions?: {
-      field: string;
-      operator: 'equals' | 'contains' | 'greater' | 'less' | 'exists';
-      value: any;
-    }[];
-  };
-  messageTemplate: {
-    content: string;
-    contentType: 'text' | 'image' | 'file' | 'template';
-    variables: string[];
-  };
-  targetConfig: {
-    conversations?: Types.ObjectId[];
-    users?: Types.ObjectId[];
-    userGroups?: string[];
-    broadcastToAll: boolean;
-  };
-  settings: {
-    isActive: boolean;
-    maxExecutions?: number;
-    executionCount: number;
-    cooldownPeriod: number; // seconds
-    lastExecuted?: Date;
-    priority: number;
-  };
-  metadata: {
-    createdBy: Types.ObjectId;
-    tags: string[];
-    category: string;
+  conversationId: Types.ObjectId;
+  senderId: Types.ObjectId;
+  content: string;
+  messageType: string;
+  sendDate: Date;
+  repeatType: 'none' | 'daily' | 'weekly' | 'monthly';
+  repeatInterval?: number;
+  isQueued: boolean;
+  isSent: boolean;
+  isFailed: boolean;
+  queuedAt?: Date;
+  sentAt?: Date;
+  failedAt?: Date;
+  errorMessage?: string;
+  metadata?: {
+    planningType?: string;
+    receiverId?: Types.ObjectId;
+    plannedAt?: Date;
+    [key: string]: any;
   };
   createdAt: Date;
   updatedAt: Date;
 }
 
 const AutoMessageSchema = new Schema<IAutoMessage>({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 100
-  },
-  description: {
-    type: String,
-    maxlength: 500
-  },
-  triggerType: {
-    type: String,
-    enum: ['keyword', 'event', 'schedule', 'condition'],
+  conversationId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Conversation',
     required: true
   },
-  triggerConfig: {
-    keywords: [{
-      type: String,
-      trim: true,
-      lowercase: true
-    }],
-    events: [{
-      type: String,
-      enum: ['user_join', 'user_leave', 'message_sent', 'conversation_created', 'user_online', 'user_offline']
-    }],
-    schedule: {
-      cron: {
-        type: String,
-        validate: {
-          validator: function(v: string) {
-            // Basic cron validation (you might want to use a proper cron validator)
-            return /^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$/.test(v);
-          },
-          message: 'Invalid cron expression'
-        }
-      },
-      timezone: {
-        type: String,
-        default: 'UTC'
-      }
-    },
-    conditions: [{
-      field: {
-        type: String,
-        required: true
-      },
-      operator: {
-        type: String,
-        enum: ['equals', 'contains', 'greater', 'less', 'exists'],
-        required: true
-      },
-      value: {
-        type: Schema.Types.Mixed,
-        required: true
-      }
-    }]
+  senderId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  messageTemplate: {
-    content: {
-      type: String,
-      required: true,
-      maxlength: 2000
-    },
-    contentType: {
-      type: String,
-      enum: ['text', 'image', 'file', 'template'],
-      default: 'text'
-    },
-    variables: [{
-      type: String,
-      trim: true
-    }]
+  content: {
+    type: String,
+    required: true,
+    maxlength: 2000
   },
-  targetConfig: {
-    conversations: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Conversation'
-    }],
-    users: [{
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-    }],
-    userGroups: [{
-      type: String,
-      enum: ['all', 'online', 'offline', 'admin', 'moderator', 'user']
-    }],
-    broadcastToAll: {
-      type: Boolean,
-      default: false
-    }
+  messageType: {
+    type: String,
+    required: true,
+    enum: ['text', 'image', 'file', 'audio', 'video']
   },
-  settings: {
-    isActive: {
-      type: Boolean,
-      default: true
-    },
-    maxExecutions: {
-      type: Number,
-      min: 0
-    },
-    executionCount: {
-      type: Number,
-      default: 0
-    },
-    cooldownPeriod: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    lastExecuted: {
-      type: Date
-    },
-    priority: {
-      type: Number,
-      default: 1,
-      min: 1,
-      max: 10
-    }
+  sendDate: {
+    type: Date,
+    required: true
+  },
+  repeatType: {
+    type: String,
+    enum: ['none', 'daily', 'weekly', 'monthly'],
+    default: 'none'
+  },
+  repeatInterval: {
+    type: Number,
+    min: 1
+  },
+  isQueued: {
+    type: Boolean,
+    default: false
+  },
+  isSent: {
+    type: Boolean,
+    default: false
+  },
+  isFailed: {
+    type: Boolean,
+    default: false
+  },
+  queuedAt: {
+    type: Date
+  },
+  sentAt: {
+    type: Date
+  },
+  failedAt: {
+    type: Date
+  },
+  errorMessage: {
+    type: String
   },
   metadata: {
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
+    planningType: {
+      type: String
     },
-    tags: [{
-      type: String,
-      trim: true,
-      maxlength: 20
-    }],
-    category: {
-      type: String,
-      default: 'general',
-      trim: true
+    receiverId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    plannedAt: {
+      type: Date
     }
   }
 }, {
@@ -187,102 +100,73 @@ const AutoMessageSchema = new Schema<IAutoMessage>({
 });
 
 // Indexes
-AutoMessageSchema.index({ 'settings.isActive': 1 });
-AutoMessageSchema.index({ triggerType: 1 });
-AutoMessageSchema.index({ 'settings.priority': -1 });
-AutoMessageSchema.index({ 'metadata.category': 1 });
-AutoMessageSchema.index({ 'triggerConfig.keywords': 1 });
-AutoMessageSchema.index({ 'settings.lastExecuted': 1 });
+AutoMessageSchema.index({ conversationId: 1 });
+AutoMessageSchema.index({ senderId: 1 });
+AutoMessageSchema.index({ sendDate: 1 });
+AutoMessageSchema.index({ isQueued: 1 });
+AutoMessageSchema.index({ isSent: 1 });
+AutoMessageSchema.index({ isFailed: 1 });
 
 // Compound indexes
 AutoMessageSchema.index({ 
-  'settings.isActive': 1, 
-  triggerType: 1, 
-  'settings.priority': -1 
+  sendDate: 1, 
+  isQueued: 1, 
+  isSent: 1, 
+  isFailed: 1 
 });
 
 // Pre-save middleware
 AutoMessageSchema.pre('save', function(next) {
-  // Validate trigger configuration based on trigger type
-  if (this.triggerType === 'keyword' && (!this.triggerConfig.keywords || this.triggerConfig.keywords.length === 0)) {
-    return next(new Error('Keyword trigger requires at least one keyword'));
-  }
-  
-  if (this.triggerType === 'event' && (!this.triggerConfig.events || this.triggerConfig.events.length === 0)) {
-    return next(new Error('Event trigger requires at least one event'));
-  }
-  
-  if (this.triggerType === 'schedule' && !this.triggerConfig.schedule?.cron) {
-    return next(new Error('Schedule trigger requires a cron expression'));
-  }
-  
-  if (this.triggerType === 'condition' && (!this.triggerConfig.conditions || this.triggerConfig.conditions.length === 0)) {
-    return next(new Error('Condition trigger requires at least one condition'));
+  // Validate send date is in the future
+  if (this.sendDate <= new Date()) {
+    return next(new Error('Send date must be in the future'));
   }
   
   next();
 });
 
-// Static method to find active auto messages by trigger type
-(AutoMessageSchema.statics as any).findActiveByTrigger = async function(triggerType: string) {
+// Static method to find pending auto messages
+(AutoMessageSchema.statics as any).findPending = async function() {
+  const now = new Date();
   return this.find({
-    'settings.isActive': true,
-    triggerType: triggerType
-  }).sort({ 'settings.priority': -1 });
+    sendDate: { $lte: now },
+    isQueued: false,
+    isSent: false,
+    isFailed: false
+  })
 };
 
-// Static method to find auto messages by keyword
-(AutoMessageSchema.statics as any).findByKeyword = async function(keyword: string) {
+// Static method to find auto messages by conversation
+(AutoMessageSchema.statics as any).findByConversation = async function(conversationId: string) {
   return this.find({
-    'settings.isActive': true,
-    triggerType: 'keyword',
-    'triggerConfig.keywords': { $in: [keyword.toLowerCase()] }
-  }).sort({ 'settings.priority': -1 });
+    conversationId: conversationId
+  }).populate('senderId', 'username firstName lastName')
+    .sort({ sendDate: 1 });
 };
 
-// Instance method to check if auto message can be executed
-(AutoMessageSchema.methods as any).canExecute = function(): boolean {
-  if (!(this as any).settings.isActive) return false;
-  
-  if ((this as any).settings.maxExecutions && (this as any).settings.executionCount >= (this as any).settings.maxExecutions) {
-    return false;
-  }
-  
-  if ((this as any).settings.cooldownPeriod > 0 && (this as any).settings.lastExecuted) {
-    const timeSinceLastExecution = Date.now() - (this as any).settings.lastExecuted.getTime();
-    if (timeSinceLastExecution < (this as any).settings.cooldownPeriod * 1000) {
-      return false;
-    }
-  }
-  
-  return true;
-};
-
-// Instance method to execute auto message
-(AutoMessageSchema.methods as any).execute = async function() {
-  if (!(this as any).canExecute()) {
-    throw new Error('Auto message cannot be executed at this time');
-  }
-  
-  (this as any).settings.executionCount += 1;
-  (this as any).settings.lastExecuted = new Date();
+// Instance method to mark as queued
+(AutoMessageSchema.methods as any).markAsQueued = async function() {
+  (this as any).isQueued = true;
+  (this as any).queuedAt = new Date();
   await (this as any).save();
-  
   return this;
 };
 
-// Instance method to process message template with variables
-(AutoMessageSchema.methods as any).processTemplate = function(variables: Record<string, any>): string {
-  let content = (this as any).messageTemplate.content;
-  
-  // Replace variables in template
-  (this as any).messageTemplate.variables.forEach((variable: string) => {
-    const placeholder = `{{${variable}}}`;
-    const value = variables[variable] || '';
-    content = content.replace(new RegExp(placeholder, 'g'), value);
-  });
-  
-  return content;
+// Instance method to mark as sent
+(AutoMessageSchema.methods as any).markAsSent = async function() {
+  (this as any).isSent = true;
+  (this as any).sentAt = new Date();
+  await (this as any).save();
+  return this;
+};
+
+// Instance method to mark as failed
+(AutoMessageSchema.methods as any).markAsFailed = async function(errorMessage: string) {
+  (this as any).isFailed = true;
+  (this as any).failedAt = new Date();
+  (this as any).errorMessage = errorMessage;
+  await (this as any).save();
+  return this;
 };
 
 export const AutoMessage = mongoose.model<IAutoMessage>('AutoMessage', AutoMessageSchema); 

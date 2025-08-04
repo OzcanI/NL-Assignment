@@ -23,11 +23,7 @@ export class RabbitMQService {
 
   async connect(): Promise<void> {
     try {
-      const url = process.env['RABBITMQ_URL'] || 'amqp://localhost:5672';
-      const username = process.env['RABBITMQ_USER'] || 'admin';
-      const password = process.env['RABBITMQ_PASSWORD'] || 'admin123';
-
-      const connectionString = url.replace('amqp://', `amqp://${username}:${password}@`);
+      const connectionString = process.env['RABBITMQ_URL'] || 'amqp://admin:admin123@localhost:5672';
       
       this.connection = await amqp.connect(connectionString);
       this.channel = await this.connection.createChannel();

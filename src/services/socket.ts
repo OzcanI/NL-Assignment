@@ -3,6 +3,7 @@ import { Server as HTTPServer } from 'http';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { User, Message, Conversation } from '../models';
+import { redisService } from './redis';
 
 interface AuthenticatedSocket {
   userId: string;
@@ -18,10 +19,19 @@ interface MessageData {
   replyTo?: string;
 }
 
+interface TypingData {
+  conversationId: string;
+  isTyping: boolean;
+}
+
+// Redis key for online users
+const ONLINE_USERS_KEY = 'online_users';
+
 class SocketService {
   private io: SocketIOServer | null = null;
   private connectedUsers: Map<string, AuthenticatedSocket> = new Map();
   private userRooms: Map<string, Set<string>> = new Map(); // userId -> Set of roomIds
+  private typingUsers: Map<string, Set<string>> = new Map(); // conversationId -> Set of typing userIds
 
   initialize(server: HTTPServer): void {
     this.io = new SocketIOServer(server, {
@@ -75,13 +85,21 @@ class SocketService {
   private setupEventHandlers(): void {
     if (!this.io) return;
 
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', async (socket) => {
       const user = (socket as any).user as AuthenticatedSocket;
       
       // Kullanıcıyı bağlı kullanıcılar listesine ekle
       console.log(`🔌 Kullanıcı bağlandı: ${user.username} (${user.userId})`);
       this.connectedUsers.set(user.userId, user);
       this.userRooms.set(user.userId, new Set());
+
+      // Kullanıcıyı Redis'teki online kullanıcılar listesine ekle
+      try {
+        await redisService.sadd(ONLINE_USERS_KEY, user.userId);
+        console.log(`✅ ${user.username} Redis online listesine eklendi`);
+      } catch (error) {
+        console.error(`❌ Redis online listesine ekleme hatası: ${error}`);
+      }
 
       // Kullanıcının online olduğunu diğer kullanıcılara bildir
       socket.broadcast.emit('user_online', {
@@ -258,7 +276,82 @@ class SocketService {
         }
       });
 
-                // Message received event'i
+                // Typing event'i
+          socket.on('typing', async (data: TypingData) => {
+            try {
+              const { conversationId, isTyping } = data;
+              
+              // conversationId'nin geçerli bir ObjectId olup olmadığını kontrol et
+              if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+                socket.emit('error', {
+                  message: 'Geçersiz konuşma ID formatı'
+                });
+                return;
+              }
+              
+              // Konuşmanın var olduğunu ve kullanıcının katılımcı olduğunu kontrol et
+              const conversation = await Conversation.findById(conversationId);
+              if (!conversation) {
+                socket.emit('error', {
+                  message: 'Konuşma bulunamadı'
+                });
+                return;
+              }
+              
+              if (!conversation.participants.includes(user.userId as any)) {
+                socket.emit('error', {
+                  message: 'Bu konuşmaya erişim yetkiniz yok'
+                });
+                return;
+              }
+              
+              if (isTyping) {
+                // Kullanıcıyı typing listesine ekle
+                const typingUsers = this.typingUsers.get(conversationId) || new Set();
+                typingUsers.add(user.userId);
+                this.typingUsers.set(conversationId, typingUsers);
+                
+                // Odadaki diğer kullanıcılara typing bildirimi gönder
+                socket.to(conversationId).emit('user_typing', {
+                  userId: user.userId,
+                  username: user.username,
+                  conversationId,
+                  isTyping: true,
+                  timestamp: new Date().toISOString()
+                });
+                
+                console.log(`⌨️ ${user.username} yazıyor: ${conversationId}`);
+              } else {
+                // Kullanıcıyı typing listesinden çıkar
+                const typingUsers = this.typingUsers.get(conversationId);
+                if (typingUsers) {
+                  typingUsers.delete(user.userId);
+                  if (typingUsers.size === 0) {
+                    this.typingUsers.delete(conversationId);
+                  }
+                }
+                
+                // Odadaki diğer kullanıcılara typing durdurma bildirimi gönder
+                socket.to(conversationId).emit('user_typing', {
+                  userId: user.userId,
+                  username: user.username,
+                  conversationId,
+                  isTyping: false,
+                  timestamp: new Date().toISOString()
+                });
+                
+                console.log(`⏹️ ${user.username} yazmayı durdurdu: ${conversationId}`);
+              }
+              
+            } catch (error) {
+              socket.emit('error', {
+                message: 'Typing event hatası',
+                error: error
+              });
+            }
+          });
+
+          // Message received event'i
           socket.on('message_received', async (data: { messageId: string; conversationId: string }) => {
             try {
               const { messageId, conversationId } = data;
@@ -266,7 +359,7 @@ class SocketService {
               // Mesajı veritabanında bul ve durumunu güncelle
               const message = await Message.findById(messageId);
               if (message) {
-                message.status = 'read';
+                message.status = 'delivered';
                 message.readAt = new Date();
                 (message as any).readBy = user.userId;
                 await message.save();
@@ -285,6 +378,38 @@ class SocketService {
             } catch (error) {
               socket.emit('error', {
                 message: 'Mesaj alma onayı hatası',
+                error: error
+              });
+            }
+          });
+
+          // Message read event'i
+          socket.on('message_read', async (data: { messageId: string; conversationId: string }) => {
+            try {
+              const { messageId, conversationId } = data;
+              
+              // Mesajı veritabanında bul ve durumunu güncelle
+              const message = await Message.findById(messageId);
+              if (message) {
+                message.status = 'read';
+                message.readAt = new Date();
+                (message as any).readBy = user.userId;
+                await message.save();
+              }
+              
+              // Mesajın okunduğunu odadaki diğer kullanıcılara bildir
+              socket.to(conversationId).emit('message_read', {
+                messageId,
+                userId: user.userId,
+                username: user.username,
+                timestamp: new Date().toISOString()
+              });
+
+              console.log(`👁️ ${user.username} mesajı okudu: ${messageId}`);
+
+            } catch (error) {
+              socket.emit('error', {
+                message: 'Mesaj okuma onayı hatası',
                 error: error
               });
             }
@@ -322,12 +447,39 @@ class SocketService {
       });
 
       // Disconnect event'i
-      socket.on('disconnect', () => {
+      socket.on('disconnect', async () => {
         console.log(`🔌 Kullanıcı ayrıldı: ${user.username} (${user.userId})`);
+        
+        // Kullanıcıyı Redis'teki online kullanıcılar listesinden çıkar
+        try {
+          await redisService.srem(ONLINE_USERS_KEY, user.userId);
+          console.log(`✅ ${user.username} Redis online listesinden çıkarıldı`);
+        } catch (error) {
+          console.error(`❌ Redis online listesinden çıkarma hatası: ${error}`);
+        }
         
         // Kullanıcıyı bağlı kullanıcılar listesinden çıkar
         this.connectedUsers.delete(user.userId);
         this.userRooms.delete(user.userId);
+        
+        // Kullanıcıyı tüm typing listelerinden çıkar
+        this.typingUsers.forEach((typingUsers, conversationId) => {
+          if (typingUsers.has(user.userId)) {
+            typingUsers.delete(user.userId);
+            if (typingUsers.size === 0) {
+              this.typingUsers.delete(conversationId);
+            } else {
+              // Odadaki diğer kullanıcılara typing durdurma bildirimi gönder
+              this.io!.to(conversationId).emit('user_typing', {
+                userId: user.userId,
+                username: user.username,
+                conversationId,
+                isTyping: false,
+                timestamp: new Date().toISOString()
+              });
+            }
+          }
+        });
 
         // Diğer kullanıcılara offline olduğunu bildir
         socket.broadcast.emit('user_offline', {
@@ -351,6 +503,11 @@ class SocketService {
 
   isUserOnline(userId: string): boolean {
     return this.connectedUsers.has(userId);
+  }
+
+  getTypingUsers(conversationId: string): string[] {
+    const typingUsers = this.typingUsers.get(conversationId);
+    return typingUsers ? Array.from(typingUsers) : [];
   }
 
   // Belirli bir odaya mesaj gönderme (server-side)

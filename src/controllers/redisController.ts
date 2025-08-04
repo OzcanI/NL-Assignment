@@ -122,4 +122,66 @@ export class RedisController {
       res.status(500).json({ error: 'Redis EXPIRE hatası', details: error });
     }
   }
+
+  // Online kullanıcı sayısını getir
+  static async getOnlineUserCount(req: Request, res: Response): Promise<void> {
+    try {
+      const count = await redisService.scard('online_users');
+      res.json({
+        success: true,
+        data: {
+          count,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Online kullanıcı sayısı alma hatası', details: error });
+    }
+  }
+
+  // Belirli kullanıcının online durumunu kontrol et
+  static async checkUserOnlineStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId } = req.params;
+      
+      if (!userId) {
+        res.status(400).json({
+          success: false,
+          message: 'Kullanıcı ID gerekli'
+        });
+        return;
+      }
+      
+      const isOnline = await redisService.sismember('online_users', userId);
+      
+      res.json({
+        success: true,
+        data: {
+          userId,
+          isOnline,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Kullanıcı online durumu kontrol hatası', details: error });
+    }
+  }
+
+  // Tüm online kullanıcı ID'lerini listele
+  static async getOnlineUserIds(req: Request, res: Response): Promise<void> {
+    try {
+      const onlineUserIds = await redisService.smembers('online_users');
+      
+      res.json({
+        success: true,
+        data: {
+          onlineUserIds,
+          count: onlineUserIds.length,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Online kullanıcı listesi alma hatası', details: error });
+    }
+  }
 } 

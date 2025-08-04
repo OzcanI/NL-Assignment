@@ -7,6 +7,9 @@ import { redisService } from './services/redis';
 import { rabbitMQService } from './services/rabbitmq';
 import { mongoDBService } from './services/mongodb';
 import { socketService } from './services/socket';
+import { queueService } from './services/queueService';
+import { cronService } from './services/cronService';
+import { messagePlanningService } from './services/messagePlanningService';
 
 // Routes
 import redisRoutes from './routes/redisRoutes';
@@ -16,6 +19,8 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import messageRoutes from './routes/messageRoutes';
 import socketRoutes from './routes/socketRoutes';
+import autoMessageRoutes from './routes/autoMessageRoutes';
+import planningRoutes from './routes/planningRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -36,11 +41,20 @@ async function initializeServices() {
     // RabbitMQ bağlantısı
     await rabbitMQService.connect();
     
-    // Test queue oluştur
-    await rabbitMQService.createQueue('test-queue');
-    
-    // Socket.IO başlat
-    socketService.initialize(server);
+          // Test queue oluştur
+      await rabbitMQService.createQueue('test-queue');
+      
+      // Queue servisi başlat
+      await queueService.initialize();
+      
+      // Cron servisi başlat
+      cronService.start();
+      
+      // Mesaj planlama servisi başlat
+      messagePlanningService.start();
+      
+      // Socket.IO başlat
+      socketService.initialize(server);
     
     console.log('✅ Tüm servisler başarıyla başlatıldı');
   } catch (error) {
@@ -93,6 +107,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/socket', socketRoutes);
+app.use('/api/auto-messages', autoMessageRoutes);
+app.use('/api/planning', planningRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -118,9 +134,11 @@ server.listen(PORT, async () => {
   console.log(`🌐 API endpoint: http://localhost:${PORT}/api/hello`);
   await initializeServices();
   console.log(`🔗 Redis status: http://localhost:${PORT}/api/redis/status`);
-  console.log(`🐰 RabbitMQ status: http://localhost:${PORT}/api/rabbitmq/status`);
-  console.log(`🐍 MongoDB status: http://localhost:${PORT}/api/mongodb/status`);
-  console.log(`🔌 Socket.IO status: http://localhost:${PORT}/api/socket/status`);
+      console.log(`🐰 RabbitMQ status: http://localhost:${PORT}/api/rabbitmq/status`);
+    console.log(`🐍 MongoDB status: http://localhost:${PORT}/api/mongodb/status`);
+    console.log(`🔌 Socket.IO status: http://localhost:${PORT}/api/socket/status`);
+    console.log(`⏰ AutoMessage status: http://localhost:${PORT}/api/auto-messages/stats`);
+    console.log(`📅 Message Planning status: http://localhost:${PORT}/api/planning/status`);
 });
 
 export default app;

@@ -122,6 +122,52 @@ export class RedisService {
     }
   }
 
+  // Set operations for online users
+  async sadd(key: string, ...members: string[]): Promise<number> {
+    try {
+      return await this.client.sAdd(key, members);
+    } catch (error) {
+      console.error('Redis SADD hatası:', error);
+      throw error;
+    }
+  }
+
+  async srem(key: string, ...members: string[]): Promise<number> {
+    try {
+      return await this.client.sRem(key, members);
+    } catch (error) {
+      console.error('Redis SREM hatası:', error);
+      throw error;
+    }
+  }
+
+  async sismember(key: string, member: string): Promise<boolean> {
+    try {
+      return await this.client.sIsMember(key, member);
+    } catch (error) {
+      console.error('Redis SISMEMBER hatası:', error);
+      throw error;
+    }
+  }
+
+  async scard(key: string): Promise<number> {
+    try {
+      return await this.client.sCard(key);
+    } catch (error) {
+      console.error('Redis SCARD hatası:', error);
+      throw error;
+    }
+  }
+
+  async smembers(key: string): Promise<string[]> {
+    try {
+      return await this.client.sMembers(key);
+    } catch (error) {
+      console.error('Redis SMEMBERS hatası:', error);
+      throw error;
+    }
+  }
+
   getConnectionStatus(): boolean {
     return this.isConnected;
   }
