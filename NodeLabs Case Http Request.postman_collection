@@ -1,0 +1,366 @@
+{
+	"info": {
+		"_postman_id": "5fccaf45-8667-473d-b096-d423db79c4d9",
+		"name": "NodeLabs Case",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "3647768"
+	},
+	"item": [
+		{
+			"name": "Auth/User",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "ibosnfs1997",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "ibosnfs1997@gmail.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "test123",
+									"type": "text"
+								},
+								{
+									"key": "firstName",
+									"value": "ibrahim",
+									"type": "text"
+								},
+								{
+									"key": "lastName",
+									"value": "özcan",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{service_url}}/api/auth/register",
+							"host": [
+								"{{service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "ibosnfs1997",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "test123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{service_url}}/api/auth/login",
+							"host": [
+								"{{service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Access Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "refreshToken",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhmMmM3M2NlOWRiYWE5ZDRhNTNmMzUiLCJpYXQiOjE3NTQyMTM4NDQsImV4cCI6MTc1NDgxODY0NH0.ApFwiKLHaSFxHeY7E3KAgYreukyWkz8EGCYutYrE9N0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{service_url}}/api/auth/refresh",
+							"host": [
+								"{{service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "refreshToken",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhmMmM3M2NlOWRiYWE5ZDRhNTNmMzUiLCJ1c2VybmFtZSI6Imlib3NuZnMxOTk3Iiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTQyMTM4NDQsImV4cCI6MTc1NDMwMDI0NH0.tskztyuiXq3hcPP3cnEOtOo-5MYRe9g1tMUv3oNwCA4",
+									"type": "text"
+								},
+								{
+									"key": "accessToken",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhmMmM3M2NlOWRiYWE5ZDRhNTNmMzUiLCJpYXQiOjE3NTQyMTM4NDQsImV4cCI6MTc1NDgxODY0NH0.ApFwiKLHaSFxHeY7E3KAgYreukyWkz8EGCYutYrE9N0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{service_url}}/api/auth/logout",
+							"host": [
+								"{{service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Conversation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"participants\": [\"688f2c73ce9dbaa9d4a53f35\", \"6890612eb439418c37895208\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{service_url}}/api/messages/conversations",
+							"host": [
+								"{{service_url}}"
+							],
+							"path": [
+								"api",
+								"messages",
+								"conversations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trigger Cron",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"participants\": [\"688f2c73ce9dbaa9d4a53f35\", \"6890612eb439418c37895208\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{service_url}}/api/messages/conversations",
+							"host": [
+								"{{service_url}}"
+							],
+							"path": [
+								"api",
+								"messages",
+								"conversations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Redis Online Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"participants\": [\"688f2c73ce9dbaa9d4a53f35\", \"6890612eb439418c37895208\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{service_url}}/api/messages/conversations",
+							"host": [
+								"{{service_url}}"
+							],
+							"path": [
+								"api",
+								"messages",
+								"conversations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "refreshToken",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhmMmM3M2NlOWRiYWE5ZDRhNTNmMzUiLCJ1c2VybmFtZSI6Imlib3NuZnMxOTk3Iiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTQyMTM4NDQsImV4cCI6MTc1NDMwMDI0NH0.tskztyuiXq3hcPP3cnEOtOo-5MYRe9g1tMUv3oNwCA4",
+									"type": "text"
+								},
+								{
+									"key": "accessToken",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhmMmM3M2NlOWRiYWE5ZDRhNTNmMzUiLCJpYXQiOjE3NTQyMTM4NDQsImV4cCI6MTc1NDgxODY0NH0.ApFwiKLHaSFxHeY7E3KAgYreukyWkz8EGCYutYrE9N0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{service_url}}/api/user/list",
+							"host": [
+								"{{service_url}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "refreshToken",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhmMmM3M2NlOWRiYWE5ZDRhNTNmMzUiLCJ1c2VybmFtZSI6Imlib3NuZnMxOTk3Iiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTQyMTM4NDQsImV4cCI6MTc1NDMwMDI0NH0.tskztyuiXq3hcPP3cnEOtOo-5MYRe9g1tMUv3oNwCA4",
+									"type": "text"
+								},
+								{
+									"key": "accessToken",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhmMmM3M2NlOWRiYWE5ZDRhNTNmMzUiLCJpYXQiOjE3NTQyMTM4NDQsImV4cCI6MTc1NDgxODY0NH0.ApFwiKLHaSFxHeY7E3KAgYreukyWkz8EGCYutYrE9N0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{service_url}}/api/auth/logout",
+							"host": [
+								"{{service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
