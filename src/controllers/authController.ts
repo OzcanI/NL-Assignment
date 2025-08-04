@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models';
-import { mongoDBService } from '../services/mongodb';
 import { redisService } from '../services/redis';
 
 export class AuthController {
@@ -10,10 +9,6 @@ export class AuthController {
   static async register(req: Request, res: Response): Promise<void> {
     try {
       const { username, email, password, firstName, lastName, role = 'user' } = req.body;
-      console.log(User)
-      console.log(email,username)
-      //Log if mongoDB is connected
-      console.log(mongoDBService.getConnectionStatus())
       
       // Kullanıcı var mı kontrol et
       const existingUser = await User.findOne({

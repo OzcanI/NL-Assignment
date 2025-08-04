@@ -2,9 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import { redisService } from './services/redis';
 import { rabbitMQService } from './services/rabbitmq';
 import { mongoDBService } from './services/mongodb';
+import { socketService } from './services/socket';
 
 // Routes
 import redisRoutes from './routes/redisRoutes';
@@ -13,11 +15,13 @@ import mongoDBRoutes from './routes/mongoDBRoutes';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import messageRoutes from './routes/messageRoutes';
+import socketRoutes from './routes/socketRoutes';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env['PORT'] || 3000;
 
 // Initialize services
@@ -35,6 +39,9 @@ async function initializeServices() {
     // Test queue oluştur
     await rabbitMQService.createQueue('test-queue');
     
+    // Socket.IO başlat
+    socketService.initialize(server);
+    
     console.log('✅ Tüm servisler başarıyla başlatıldı');
   } catch (error) {
     console.error('❌ Servis başlatma hatası:', error);
@@ -47,6 +54,9 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Static files
+app.use(express.static('public'));
 
 // Basic route
 app.get('/', (req, res) => {
@@ -82,6 +92,7 @@ app.use('/api/mongodb', mongoDBRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/socket', socketRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -101,7 +112,7 @@ app.use('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, async () => {
+server.listen(PORT, async () => {
   console.log(`🚀 Server ${PORT} portunda çalışıyor`);
   console.log(`📱 Health check: http://localhost:${PORT}/health`);
   console.log(`🌐 API endpoint: http://localhost:${PORT}/api/hello`);
@@ -109,6 +120,7 @@ app.listen(PORT, async () => {
   console.log(`🔗 Redis status: http://localhost:${PORT}/api/redis/status`);
   console.log(`🐰 RabbitMQ status: http://localhost:${PORT}/api/rabbitmq/status`);
   console.log(`🐍 MongoDB status: http://localhost:${PORT}/api/mongodb/status`);
+  console.log(`🔌 Socket.IO status: http://localhost:${PORT}/api/socket/status`);
 });
 
 export default app;

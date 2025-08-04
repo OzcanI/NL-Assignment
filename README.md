@@ -40,7 +40,7 @@ docker-compose up -d
 docker-compose -f docker-compose.app.yml up -d
 
 # Uygulamaya erişim: http://localhost:3000
-```
+# Socket.IO Test: http://localhost:3000
 
 ## 📝 Kullanılabilir Scriptler
 
@@ -116,6 +116,39 @@ docker-compose -f docker-compose.app.yml up -d
 - `POST /api/messages/conversations/:conversationId/participants` - Konuşmaya katılımcı ekleme (Auth gerekli)
 - `DELETE /api/messages/conversations/:conversationId/participants` - Konuşmadan katılımcı çıkarma (Auth gerekli)
 - `DELETE /api/messages/conversations/:conversationId` - Konuşma silme (Auth gerekli)
+
+### Socket.IO Endpoints
+- `GET /api/socket/status` - Socket.IO durumu
+- `GET /api/socket/connected-users` - Bağlı kullanıcılar (Admin)
+- `GET /api/socket/user/:userId/rooms` - Kullanıcının odaları
+- `GET /api/socket/user/:userId/online` - Kullanıcı online durumu
+- `POST /api/socket/system-message` - Sistem mesajı gönderme (Admin)
+- `POST /api/socket/private-message` - Özel mesaj gönderme (Admin)
+- `POST /api/socket/broadcast` - Broadcast mesajı gönderme (Admin)
+
+### Socket.IO Events
+#### Client → Server
+- `connection` - Kullanıcının sisteme bağlanması
+- `join_room` - Belirli bir konuşma odasına katılma
+- `send_message` - Gerçek zamanlı mesaj gönderme
+- `message_received` - Mesaj alındı bildirimi
+- `leave_room` - Odadan ayrılma
+- `disconnect` - Kullanıcının sistemden ayrılması
+
+#### Server → Client
+- `connection` - Bağlantı onayı
+- `user_online` - Kullanıcının online durumu bildirimi
+- `user_offline` - Kullanıcının offline durumu bildirimi
+- `room_joined` - Odaya katılma onayı
+- `user_joined_room` - Başka kullanıcının odaya katılması
+- `user_left_room` - Başka kullanıcının odadan ayrılması
+- `new_message` - Yeni mesaj bildirimi
+- `message_sent` - Mesaj gönderme onayı
+- `message_received` - Mesaj alma onayı
+- `system_message` - Sistem mesajı
+- `private_message` - Özel mesaj
+- `broadcast_message` - Broadcast mesajı
+- `error` - Hata bildirimi
 
 ## 🔧 Gereksinimler
 
